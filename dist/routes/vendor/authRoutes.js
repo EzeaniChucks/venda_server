@@ -19,6 +19,7 @@ router.post('/login', [
     (0, express_validator_1.body)('email').isEmail().withMessage('Valid email is required'),
     (0, express_validator_1.body)('password').notEmpty().withMessage('Password is required')
 ], authController_1.default.login);
+router.post('/refresh', auth_1.authenticate, authController_1.default.refreshToken);
 router.get('/profile', auth_1.authenticate, authController_2.default.getProfile);
 router.put('/profile', auth_1.authenticate, authController_2.default.updateProfile);
 exports.default = router;

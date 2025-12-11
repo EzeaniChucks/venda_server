@@ -81,7 +81,6 @@ class NotificationController {
     }
     async registerPushToken(req, res) {
         try {
-            console.log(req.body);
             const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 return (0, response_1.validationErrorResponse)(res, errors.array());

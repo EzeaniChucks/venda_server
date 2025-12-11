@@ -103,6 +103,53 @@ class AuthService {
         const token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email, role }, JWT_SECRET, { expiresIn: "30d" });
         return { user: { ...user, role }, token };
     }
+    async refreshToken(oldToken, role) {
+        try {
+            const decoded = jsonwebtoken_1.default.verify(oldToken, JWT_SECRET);
+            if (!decoded) {
+                throw new Error("Invalid or expired token");
+            }
+            if (decoded.role !== role) {
+                throw new Error(`Invalid token role. Expected ${role}, got ${decoded.role}`);
+            }
+            const user = await this.getById(decoded.id, role);
+            if (!user) {
+                throw new Error("User not found");
+            }
+            if (!user.isActive) {
+                throw new Error("Account is deactivated");
+            }
+            const newToken = this.generateToken({
+                id: user.id,
+                email: user.email,
+                role: role,
+            });
+            return {
+                user: { ...user, role },
+                token: newToken,
+            };
+        }
+        catch (error) {
+            console.error("Refresh token error:", error);
+            if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
+                throw new Error("Token expired");
+            }
+            else if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
+                throw new Error("Invalid token");
+            }
+            throw error;
+        }
+    }
+    generateToken(user) {
+        if (!user.id || !user.email || !user.role) {
+            throw new Error("Missing required user fields for token generation");
+        }
+        return jsonwebtoken_1.default.sign({
+            id: user.id,
+            email: user.email,
+            role: user.role,
+        }, JWT_SECRET, { expiresIn: "30d" });
+    }
     async getById(userId, role) {
         switch (role) {
             case "customer":

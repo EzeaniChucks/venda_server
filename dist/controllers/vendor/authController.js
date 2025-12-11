@@ -43,6 +43,38 @@ class VendorAuthController {
             return (0, response_1.errorResponse)(res, error.message, 401);
         }
     }
+    async refreshToken(req, res) {
+        try {
+            const user = req.user;
+            if (!user) {
+                return (0, response_1.errorResponse)(res, "User not found", 401);
+            }
+            if (user.role !== "vendor") {
+                return (0, response_1.errorResponse)(res, "Invalid token. Vendor access required.", 401);
+            }
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith("Bearer ")) {
+                return (0, response_1.errorResponse)(res, "Authorization header missing or invalid", 401);
+            }
+            const oldToken = authHeader.replace("Bearer ", "");
+            const { user: updatedUser, token: newToken } = await authService_service_1.default.refreshToken(oldToken, user.role);
+            const userWithoutPassword = { ...updatedUser, password: undefined };
+            return (0, response_1.successResponse)(res, {
+                user: userWithoutPassword,
+                token: newToken,
+                expiresIn: 30 * 24 * 60 * 60,
+            }, "Token refreshed successfully");
+        }
+        catch (error) {
+            console.error("Token refresh error:", error);
+            if (error.message.includes("Invalid or expired") ||
+                error.message.includes("User not found") ||
+                error.message.includes("deactivated")) {
+                return (0, response_1.errorResponse)(res, error.message, 401);
+            }
+            return (0, response_1.errorResponse)(res, "Token refresh failed", 500);
+        }
+    }
 }
 exports.VendorAuthController = VendorAuthController;
 exports.default = new VendorAuthController();
