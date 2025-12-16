@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Wallet = void 0;
 const typeorm_1 = require("typeorm");
 const Customer_1 = require("./Customer");
-const WalletTransaction_1 = require("./WalletTransaction");
 let Wallet = class Wallet {
 };
 exports.Wallet = Wallet;
@@ -41,10 +40,6 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: "customer_id" }),
     __metadata("design:type", Customer_1.Customer)
 ], Wallet.prototype, "customer", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => WalletTransaction_1.WalletTransaction, (transaction) => transaction.wallet),
-    __metadata("design:type", Array)
-], Wallet.prototype, "transactions", void 0);
 exports.Wallet = Wallet = __decorate([
     (0, typeorm_1.Entity)("wallets")
 ], Wallet);

@@ -12,6 +12,8 @@ import {
 } from "../../entities/SubscriptionInvoice";
 import bankService from "../shared/bankservice.service";
 import { sendEmail } from "../emailService";
+import { TransactionService } from "../shared/transaction.service";
+import { TransactionStatus, TransactionType } from "../../entities";
 
 class SubscriptionService {
   private subscriptionRepository =
@@ -202,9 +204,7 @@ class SubscriptionService {
     reference: string,
     vendorId: string
   ): Promise<VendorSubscription> {
-    const verificationData = await bankService.verifyTransaction(
-      reference
-    );
+    const verificationData = await bankService.verifyTransaction(reference);
 
     if (
       !verificationData.status ||
@@ -288,10 +288,23 @@ class SubscriptionService {
       await queryRunner.commitTransaction();
 
       // Create invoice (outside transaction as it's not critical for atomicity)
-      await this.createInvoice(
+      const invoice = await this.createInvoice(
         savedSubscription,
         reference,
         verificationData.data.id.toString()
+      );
+
+      await this.createTransactionRecord(
+        vendorId,
+        plan.price,
+        reference,
+        savedSubscription.id,
+        plan.tier,
+        {
+          activationDate: new Date().toISOString(),
+          initialPayment: true,
+          invoiceNumber: invoice.invoiceNumber,
+        }
       );
 
       // Send confirmation email
@@ -358,6 +371,14 @@ class SubscriptionService {
           chargeResult.data.id.toString()
         );
 
+        // In renewSubscription method, add after creating invoice (around line 280):
+        await this.createRenewalTransaction(
+          subscription.vendorId,
+          plan.price,
+          reference,
+          subscription.id,
+          plan.tier
+        );
         // Send receipt email
         await this.sendRenewalReceiptEmail(
           subscription.vendorId,
@@ -541,6 +562,151 @@ class SubscriptionService {
         <p>If payment is not received within 3 days, your subscription will be downgraded to the Free tier.</p>
       `,
     });
+  }
+
+  private async createTransactionRecord(
+    vendorId: string,
+    amount: number,
+    reference: string,
+    subscriptionId: string,
+    planTier: string,
+    metadata: any = {}
+  ) {
+    try {
+      const vendor = await this.vendorRepository.findOne({
+        where: { id: vendorId },
+        select: ["id", "email", "businessName"],
+      });
+
+      if (!vendor) {
+        console.warn(`Vendor not found for transaction: ${vendorId}`);
+        return;
+      }
+
+      await TransactionService.createTransaction({
+        entityId: vendorId,
+        entityType: "vendor",
+        amount,
+        transactionType: "subscription_payment" as TransactionType,
+        reference,
+        description: `Subscription payment: ${planTier} plan`,
+        status: "completed" as TransactionStatus,
+        metadata: {
+          ...metadata,
+          subscriptionId,
+          planTier,
+          vendorName: vendor.businessName || vendor.email,
+          paymentType: "subscription",
+        },
+      });
+
+      console.log(`Transaction recorded for subscription: ${reference}`);
+    } catch (error) {
+      console.error("Error creating transaction record:", error);
+      // Don't throw - transaction logging shouldn't break the main flow
+    }
+  }
+
+  /**
+   * Create transaction for subscription renewal
+   */
+  private async createRenewalTransaction(
+    vendorId: string,
+    amount: number,
+    reference: string,
+    subscriptionId: string,
+    planTier: string
+  ) {
+    return this.createTransactionRecord(
+      vendorId,
+      amount,
+      reference,
+      subscriptionId,
+      planTier,
+      {
+        isRenewal: true,
+        renewalDate: new Date().toISOString(),
+      }
+    );
+  }
+
+  //THESE methods ARE FOR admin/dashboard use
+
+  /**
+   * Get subscription statistics for admin dashboard
+   */
+  async getSubscriptionStats(): Promise<{
+    totalSubscriptions: number;
+    activeSubscriptions: number;
+    revenue: number;
+    tierDistribution: Record<SubscriptionTier, number>;
+  }> {
+    const [subscriptions, revenueResult] = await Promise.all([
+      this.subscriptionRepository.find({
+        where: { status: SubscriptionStatus.ACTIVE },
+      }),
+      this.invoiceRepository
+        .createQueryBuilder("invoice")
+        .select("SUM(invoice.amount)", "total")
+        .where("invoice.status = :status", { status: InvoiceStatus.PAID })
+        .getRawOne(),
+    ]);
+
+    const tierDistribution = subscriptions.reduce((acc, sub) => {
+      acc[sub.tier] = (acc[sub.tier] || 0) + 1;
+      return acc;
+    }, {} as Record<SubscriptionTier, number>);
+
+    return {
+      totalSubscriptions: subscriptions.length,
+      activeSubscriptions: subscriptions.filter(
+        (s) => new Date(s.endDate) > new Date()
+      ).length,
+      revenue: parseFloat(revenueResult?.total || "0"),
+      tierDistribution,
+    };
+  }
+  /**
+   * Get upcoming renewals (for admin dashboard)
+   */
+  async getUpcomingRenewals(days: number = 7): Promise<
+    Array<{
+      vendorId: string;
+      vendorEmail: string;
+      vendorName: string;
+      subscriptionId: string;
+      tier: SubscriptionTier;
+      endDate: Date;
+      amount: number;
+      autoRenew: boolean;
+    }>
+  > {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() + days);
+
+    const subscriptions = await this.subscriptionRepository
+      .createQueryBuilder("subscription")
+      .leftJoinAndSelect("subscription.vendor", "vendor")
+      .where("subscription.status = :status", {
+        status: SubscriptionStatus.ACTIVE,
+      })
+      .andWhere("subscription.endDate BETWEEN :now AND :cutoff", {
+        now: new Date(),
+        cutoff: cutoffDate,
+      })
+      .orderBy("subscription.endDate", "ASC")
+      .getMany();
+
+    return subscriptions.map((sub) => ({
+      vendorId: sub.vendorId,
+      vendorEmail: sub.vendor?.email || "",
+      vendorName: sub.vendor?.businessName || "",
+      subscriptionId: sub.id,
+      tier: sub.tier,
+      endDate: sub.endDate,
+      amount: sub.amount,
+      autoRenew: sub.autoRenew,
+    }));
   }
 }
 

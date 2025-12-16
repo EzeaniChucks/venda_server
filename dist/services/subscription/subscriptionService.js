@@ -10,6 +10,7 @@ const SubscriptionPlan_1 = require("../../entities/SubscriptionPlan");
 const SubscriptionInvoice_1 = require("../../entities/SubscriptionInvoice");
 const bankservice_service_1 = __importDefault(require("../shared/bankservice.service"));
 const emailService_1 = require("../emailService");
+const transaction_service_1 = require("../shared/transaction.service");
 class SubscriptionService {
     constructor() {
         this.subscriptionRepository = data_source_1.AppDataSource.getRepository(VendorSubscription_1.VendorSubscription);
@@ -211,7 +212,12 @@ class SubscriptionService {
             });
             const savedSubscription = await queryRunner.manager.save(subscription);
             await queryRunner.commitTransaction();
-            await this.createInvoice(savedSubscription, reference, verificationData.data.id.toString());
+            const invoice = await this.createInvoice(savedSubscription, reference, verificationData.data.id.toString());
+            await this.createTransactionRecord(vendorId, plan.price, reference, savedSubscription.id, plan.tier, {
+                activationDate: new Date().toISOString(),
+                initialPayment: true,
+                invoiceNumber: invoice.invoiceNumber,
+            });
             await this.sendSubscriptionActivatedEmail(vendorId, plan);
             return savedSubscription;
         }
@@ -251,6 +257,7 @@ class SubscriptionService {
                 subscription.nextRetryDate = undefined;
                 await this.subscriptionRepository.save(subscription);
                 await this.createInvoice(subscription, reference, chargeResult.data.id.toString());
+                await this.createRenewalTransaction(subscription.vendorId, plan.price, reference, subscription.id, plan.tier);
                 await this.sendRenewalReceiptEmail(subscription.vendorId, plan, reference);
                 return { success: true };
             }
@@ -388,6 +395,92 @@ class SubscriptionService {
         <p>If payment is not received within 3 days, your subscription will be downgraded to the Free tier.</p>
       `,
         });
+    }
+    async createTransactionRecord(vendorId, amount, reference, subscriptionId, planTier, metadata = {}) {
+        try {
+            const vendor = await this.vendorRepository.findOne({
+                where: { id: vendorId },
+                select: ["id", "email", "businessName"],
+            });
+            if (!vendor) {
+                console.warn(`Vendor not found for transaction: ${vendorId}`);
+                return;
+            }
+            await transaction_service_1.TransactionService.createTransaction({
+                entityId: vendorId,
+                entityType: "vendor",
+                amount,
+                transactionType: "subscription_payment",
+                reference,
+                description: `Subscription payment: ${planTier} plan`,
+                status: "completed",
+                metadata: {
+                    ...metadata,
+                    subscriptionId,
+                    planTier,
+                    vendorName: vendor.businessName || vendor.email,
+                    paymentType: "subscription",
+                },
+            });
+            console.log(`Transaction recorded for subscription: ${reference}`);
+        }
+        catch (error) {
+            console.error("Error creating transaction record:", error);
+        }
+    }
+    async createRenewalTransaction(vendorId, amount, reference, subscriptionId, planTier) {
+        return this.createTransactionRecord(vendorId, amount, reference, subscriptionId, planTier, {
+            isRenewal: true,
+            renewalDate: new Date().toISOString(),
+        });
+    }
+    async getSubscriptionStats() {
+        const [subscriptions, revenueResult] = await Promise.all([
+            this.subscriptionRepository.find({
+                where: { status: VendorSubscription_1.SubscriptionStatus.ACTIVE },
+            }),
+            this.invoiceRepository
+                .createQueryBuilder("invoice")
+                .select("SUM(invoice.amount)", "total")
+                .where("invoice.status = :status", { status: SubscriptionInvoice_1.InvoiceStatus.PAID })
+                .getRawOne(),
+        ]);
+        const tierDistribution = subscriptions.reduce((acc, sub) => {
+            acc[sub.tier] = (acc[sub.tier] || 0) + 1;
+            return acc;
+        }, {});
+        return {
+            totalSubscriptions: subscriptions.length,
+            activeSubscriptions: subscriptions.filter((s) => new Date(s.endDate) > new Date()).length,
+            revenue: parseFloat(revenueResult?.total || "0"),
+            tierDistribution,
+        };
+    }
+    async getUpcomingRenewals(days = 7) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() + days);
+        const subscriptions = await this.subscriptionRepository
+            .createQueryBuilder("subscription")
+            .leftJoinAndSelect("subscription.vendor", "vendor")
+            .where("subscription.status = :status", {
+            status: VendorSubscription_1.SubscriptionStatus.ACTIVE,
+        })
+            .andWhere("subscription.endDate BETWEEN :now AND :cutoff", {
+            now: new Date(),
+            cutoff: cutoffDate,
+        })
+            .orderBy("subscription.endDate", "ASC")
+            .getMany();
+        return subscriptions.map((sub) => ({
+            vendorId: sub.vendorId,
+            vendorEmail: sub.vendor?.email || "",
+            vendorName: sub.vendor?.businessName || "",
+            subscriptionId: sub.id,
+            tier: sub.tier,
+            endDate: sub.endDate,
+            amount: sub.amount,
+            autoRenew: sub.autoRenew,
+        }));
     }
 }
 exports.default = new SubscriptionService();

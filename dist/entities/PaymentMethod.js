@@ -12,35 +12,41 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentMethod = void 0;
 const typeorm_1 = require("typeorm");
 const Customer_1 = require("./Customer");
+const Vendor_1 = require("./Vendor");
+const Rider_1 = require("./Rider");
 let PaymentMethod = class PaymentMethod {
 };
 exports.PaymentMethod = PaymentMethod;
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
+    (0, typeorm_1.PrimaryGeneratedColumn)("uuid"),
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', name: 'customer_id' }),
+    (0, typeorm_1.Column)({ name: "owner_id" }),
     __metadata("design:type", String)
-], PaymentMethod.prototype, "customerId", void 0);
+], PaymentMethod.prototype, "ownerId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'authorization_code' }),
+    (0, typeorm_1.Column)({ name: "owner_type" }),
+    __metadata("design:type", String)
+], PaymentMethod.prototype, "ownerType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "authorization_code" }),
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "authorizationCode", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'card_type' }),
+    (0, typeorm_1.Column)({ name: "card_type" }),
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "cardType", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'last4' }),
+    (0, typeorm_1.Column)({ name: "last4" }),
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "last4", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'exp_month' }),
+    (0, typeorm_1.Column)({ name: "exp_month" }),
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "expMonth", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'exp_year' }),
+    (0, typeorm_1.Column)({ name: "exp_year" }),
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "expYear", void 0);
 __decorate([
@@ -48,7 +54,7 @@ __decorate([
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "bank", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'country_code' }),
+    (0, typeorm_1.Column)({ name: "country_code" }),
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "countryCode", void 0);
 __decorate([
@@ -56,27 +62,37 @@ __decorate([
     __metadata("design:type", String)
 ], PaymentMethod.prototype, "brand", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'is_default', default: false }),
+    (0, typeorm_1.Column)({ name: "is_default", default: false }),
     __metadata("design:type", Boolean)
 ], PaymentMethod.prototype, "isDefault", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'is_active', default: true }),
+    (0, typeorm_1.Column)({ name: "is_active", default: true }),
     __metadata("design:type", Boolean)
 ], PaymentMethod.prototype, "isActive", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
+    (0, typeorm_1.CreateDateColumn)({ name: "created_at" }),
     __metadata("design:type", Date)
 ], PaymentMethod.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
+    (0, typeorm_1.UpdateDateColumn)({ name: "updated_at" }),
     __metadata("design:type", Date)
 ], PaymentMethod.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => Customer_1.Customer),
-    (0, typeorm_1.JoinColumn)({ name: 'customer_id' }),
+    (0, typeorm_1.ManyToOne)(() => Customer_1.Customer, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "owner_id", referencedColumnName: "id" }),
     __metadata("design:type", Customer_1.Customer)
 ], PaymentMethod.prototype, "customer", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => Vendor_1.Vendor, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "owner_id", referencedColumnName: "id" }),
+    __metadata("design:type", Vendor_1.Vendor)
+], PaymentMethod.prototype, "vendor", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => Rider_1.Rider, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "owner_id", referencedColumnName: "id" }),
+    __metadata("design:type", Rider_1.Rider)
+], PaymentMethod.prototype, "rider", void 0);
 exports.PaymentMethod = PaymentMethod = __decorate([
-    (0, typeorm_1.Entity)('payment_methods')
+    (0, typeorm_1.Entity)("payment_methods")
 ], PaymentMethod);
 //# sourceMappingURL=PaymentMethod.js.map

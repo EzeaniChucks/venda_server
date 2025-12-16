@@ -38,9 +38,12 @@ export class VendorProductService {
       );
     }
 
+    console.log("geot here 1")
     // Enforce subscription product limit
     await productLimitService.enforceProductLimit(vendorId);
-
+    
+    console.log("geot here 2")
+    
     const product = productRepo.create({
       ...data,
       vendorId,
@@ -51,6 +54,8 @@ export class VendorProductService {
       totalReviews: 0,
       totalSales: 0,
     });
+    
+    console.log("geot here 3")
 
     return await productRepo.save(product);
   }

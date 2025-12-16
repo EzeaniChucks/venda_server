@@ -17,7 +17,12 @@ export type TransactionType =
   | "order_payment"
   | "refund"
   | "commission"
-  | "transfer";
+  | "transfer"
+  | "wallet_payment"
+  | "subscription"
+  | "donation"
+  |"other"
+  
 export type TransactionStatus =
   | "pending"
   | "completed"
@@ -36,6 +41,28 @@ export class Transaction {
   @Column({ name: "entity_type" })
   entityType!: "customer" | "vendor" | "rider";
 
+  // Add wallet-specific fields
+  @Column({ name: "wallet_id", nullable: true })
+  walletId?: string;
+
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    name: "balance_before",
+    nullable: true,
+  })
+  balanceBefore?: number;
+
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    name: "balance_after",
+    nullable: true,
+  })
+  balanceAfter?: number;
+
   @Column({ name: "order_id", nullable: true })
   orderId?: string;
 
@@ -45,15 +72,17 @@ export class Transaction {
   @Column({
     type: "enum",
     enum: [
-      "wallet_funding",
-      "wallet_withdrawal",
-      "order_payment",
-      "refund",
-      "commission",
-      "transfer",
+      "wallet_funding", // Deposit to wallet
+      "wallet_withdrawal", // Withdrawal from wallet
+      "order_payment", // Payment for order
+      "refund", // Refund to wallet/card
+      "commission", // Commission payment
+      "transfer", // Transfer between wallets
+      "wallet_payment", // Payment using wallet (new)
     ],
+    name: "transaction_type",
   })
-  type!: TransactionType;
+  transactionType!: TransactionType;
 
   @Column()
   reference!: string; // Paystack reference or internal reference
@@ -68,8 +97,8 @@ export class Transaction {
   })
   status!: TransactionStatus;
 
-  @Column()
-  purpose!: string; // Description of transaction
+  @Column({ type: "text" })
+  description!: string; // Renamed from 'purpose' for clarity
 
   @Column({ type: "jsonb", nullable: true })
   metadata?: {
@@ -106,4 +135,9 @@ export class Transaction {
   @ManyToOne(() => Order, { nullable: true })
   @JoinColumn({ name: "order_id" })
   order?: Order;
+
+   // wallet table isn't currently in use. Wallet exists as jsonb field on rider, customer and vendor entity classes
+  //  @ManyToOne(() => Wallet, (wallet) => wallet.transactions, { nullable: true })
+  //  @JoinColumn({ name: "wallet_id" })
+  //  wallet?: Wallet;
 }

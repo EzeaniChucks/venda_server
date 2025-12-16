@@ -20,7 +20,7 @@ import productRoutes from "./routes/shared/productRoutes";
 import cartRoutes from "./routes/customer/cartRoutes";
 import wishlistRoutes from "./routes/customer/wishlistRoutes";
 import customerOrderRoutes from "./routes/customer/orderRoutes";
-import walletRoutes from "./routes/customer/walletRoutes";
+import walletRoutes from "./routes/shared/walletRoutes";
 import vendorRoutes from "./routes/vendor/vendorRoutes";
 import vendorOrderRoutes from "./routes/vendor/orderRoutes";
 import riderRoutes from "./routes/rider/riderRoutes";
@@ -31,12 +31,11 @@ import adminCategoryRoutes from "./routes/admin/categoryRoutes";
 import adminContentRoutes from "./routes/admin/contentRoutes";
 import adminVendorFeatureRoutes from "./routes/admin/vendorFeatureRoutes";
 import adminOrderManagementRoutes from "./routes/admin/orderManagementRoutes";
-import paymentRoutes from "./routes/shared/payments";
+import paymentRoutes from "./routes/shared/paymentsRoutes";
 import uploadRoutes from "./routes/shared/upload";
 import fashionFeedRoutes from "./routes/shared/fashion-feed";
 import verificationRoutes from "./routes/shared/verification.routes";
 import passwordResetRoutes from "./routes/shared/passwordReset.routes";
-import newWalletRoutes from "./routes/shared/wallet.routes";
 import locationRoutes from "./routes/shared/location.routes";
 import bankRoutes from "./routes/shared/bankRoutes";
 import analyticsRoutes from './routes/vendor/analyticsRoutes';
@@ -136,6 +135,7 @@ app.use("/api/admin/auth", adminAuthRoutes);
 // Shared routes
 app.use("/api/products", productRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/wallet", walletRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use('/api/bank', bankRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -145,12 +145,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use("/api/customer/cart", cartRoutes);
 app.use("/api/customer/wishlist", wishlistRoutes);
 app.use("/api/customer/orders", customerOrderRoutes);
-app.use("/api/customer/wallet", walletRoutes);
+// app.use("/api/customer/wallet", walletRoutes);
 
 // Advanced features
 app.use("/api/verification", verificationRoutes);
 app.use("/api/shared/auth", passwordResetRoutes);
-app.use("/api/v2/wallet", newWalletRoutes);
 app.use("/api/locations", locationRoutes);
 
 // Vendor routes

@@ -19,7 +19,9 @@ class VendorProductService {
         if (!vendor.isApproved) {
             throw new Error("Your vendor account must be approved before creating products");
         }
+        console.log("geot here 1");
         await productLimitService_1.default.enforceProductLimit(vendorId);
+        console.log("geot here 2");
         const product = productRepo.create({
             ...data,
             vendorId,
@@ -30,6 +32,7 @@ class VendorProductService {
             totalReviews: 0,
             totalSales: 0,
         });
+        console.log("geot here 3");
         return await productRepo.save(product);
     }
     async updateProduct(vendorId, productId, data) {

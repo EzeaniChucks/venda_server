@@ -31,6 +31,30 @@ __decorate([
     __metadata("design:type", String)
 ], Transaction.prototype, "entityType", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: "wallet_id", nullable: true }),
+    __metadata("design:type", String)
+], Transaction.prototype, "walletId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: "decimal",
+        precision: 10,
+        scale: 2,
+        name: "balance_before",
+        nullable: true,
+    }),
+    __metadata("design:type", Number)
+], Transaction.prototype, "balanceBefore", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: "decimal",
+        precision: 10,
+        scale: 2,
+        name: "balance_after",
+        nullable: true,
+    }),
+    __metadata("design:type", Number)
+], Transaction.prototype, "balanceAfter", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: "order_id", nullable: true }),
     __metadata("design:type", String)
 ], Transaction.prototype, "orderId", void 0);
@@ -48,10 +72,12 @@ __decorate([
             "refund",
             "commission",
             "transfer",
+            "wallet_payment",
         ],
+        name: "transaction_type",
     }),
     __metadata("design:type", String)
-], Transaction.prototype, "type", void 0);
+], Transaction.prototype, "transactionType", void 0);
 __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
@@ -69,9 +95,9 @@ __decorate([
     __metadata("design:type", String)
 ], Transaction.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ type: "text" }),
     __metadata("design:type", String)
-], Transaction.prototype, "purpose", void 0);
+], Transaction.prototype, "description", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: "jsonb", nullable: true }),
     __metadata("design:type", Object)

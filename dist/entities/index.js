@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RiderDocument = exports.WalletTransaction = exports.Wallet = exports.VendorProfile = exports.Model = exports.News = exports.Transaction = exports.OrderItem = exports.Order = exports.Wishlist = exports.Cart = exports.Product = exports.Category = exports.Admin = exports.Rider = exports.Vendor = exports.Customer = void 0;
+exports.RiderDocument = exports.Wallet = exports.VendorProfile = exports.Model = exports.News = exports.Transaction = exports.OrderItem = exports.Order = exports.Wishlist = exports.Cart = exports.Product = exports.Category = exports.Admin = exports.Rider = exports.Vendor = exports.Customer = void 0;
 var Customer_1 = require("./Customer");
 Object.defineProperty(exports, "Customer", { enumerable: true, get: function () { return Customer_1.Customer; } });
 var Vendor_1 = require("./Vendor");
@@ -31,8 +31,6 @@ var VendorProfile_1 = require("./VendorProfile");
 Object.defineProperty(exports, "VendorProfile", { enumerable: true, get: function () { return VendorProfile_1.VendorProfile; } });
 var Wallet_1 = require("./Wallet");
 Object.defineProperty(exports, "Wallet", { enumerable: true, get: function () { return Wallet_1.Wallet; } });
-var WalletTransaction_1 = require("./WalletTransaction");
-Object.defineProperty(exports, "WalletTransaction", { enumerable: true, get: function () { return WalletTransaction_1.WalletTransaction; } });
 var RiderDocument_1 = require("./RiderDocument");
 Object.defineProperty(exports, "RiderDocument", { enumerable: true, get: function () { return RiderDocument_1.RiderDocument; } });
 //# sourceMappingURL=index.js.map

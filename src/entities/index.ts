@@ -13,5 +13,5 @@ export { News } from './News';
 export { Model } from './Model';
 export { VendorProfile } from './VendorProfile';
 export { Wallet } from './Wallet';
-export { WalletTransaction } from './WalletTransaction';
+// export { WalletTransaction } from './WalletTransaction';
 export { RiderDocument, DocumentStatus } from './RiderDocument';

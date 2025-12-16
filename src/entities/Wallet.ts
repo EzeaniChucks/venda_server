@@ -9,7 +9,7 @@ import {
   JoinColumn,
 } from "typeorm";
 import { Customer } from "./Customer";
-import { WalletTransaction } from "./WalletTransaction";
+// import { WalletTransaction } from "./WalletTransaction";
 
 @Entity("wallets")
 export class Wallet {
@@ -32,6 +32,6 @@ export class Wallet {
   @JoinColumn({ name: "customer_id" })
   customer!: Customer;
 
-  @OneToMany(() => WalletTransaction, (transaction) => transaction.wallet)
-  transactions!: WalletTransaction[];
+  // @OneToMany(() => WalletTransaction, (transaction) => transaction.wallet)
+  // transactions!: WalletTransaction[];
 }
