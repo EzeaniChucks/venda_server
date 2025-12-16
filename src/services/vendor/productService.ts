@@ -1,7 +1,9 @@
+import { extractPublicId, isCloudinaryUrl } from "../../utils/cloudinary";
 import { AppDataSource } from "../../config/data-source";
 import { Product } from "../../entities/Product";
 import { Vendor } from "../../entities/Vendor";
 import productLimitService from "../subscription/productLimitService";
+import { deleteImage } from "../../config/cloudinary";
 
 const productRepo = AppDataSource.getRepository(Product);
 const vendorRepo = AppDataSource.getRepository(Vendor);
@@ -38,12 +40,11 @@ export class VendorProductService {
       );
     }
 
-    console.log("geot here 1")
     // Enforce subscription product limit
     await productLimitService.enforceProductLimit(vendorId);
-    
-    console.log("geot here 2")
-    
+
+    // console.log(data);
+
     const product = productRepo.create({
       ...data,
       vendorId,
@@ -54,8 +55,6 @@ export class VendorProductService {
       totalReviews: 0,
       totalSales: 0,
     });
-    
-    console.log("geot here 3")
 
     return await productRepo.save(product);
   }
@@ -84,7 +83,7 @@ export class VendorProductService {
     delete (data as any).isFeatured;
 
     // console.log(data)
-    
+
     // If product details are changed significantly, require re-approval
     const significantChanges = ["name", "description", "price", "categoryId"];
     const hasSignificantChanges = Object.keys(data).some((key) =>
@@ -102,6 +101,7 @@ export class VendorProductService {
   async deleteProduct(vendorId: string, productId: string) {
     const product = await productRepo.findOne({
       where: { id: productId, vendorId },
+      select: ["id", "images", "imagePublicIds", "isActive"], // Select needed fields
     });
 
     if (!product) {
@@ -109,6 +109,9 @@ export class VendorProductService {
         "Product not found or you do not have permission to delete it"
       );
     }
+
+    // First, delete images from Cloudinary
+    await this.deleteProductImages(product);
 
     // Soft delete by setting isActive to false
     product.isActive = false;
@@ -130,6 +133,77 @@ export class VendorProductService {
 
     product.isActive = !product.isActive;
     return await productRepo.save(product);
+  }
+
+  /**
+   * Deletes product images from Cloudinary
+   */
+  private async deleteProductImages(product: Product): Promise<void> {
+    try {
+      // Method 1: Use imagePublicIds if available
+      if (product.imagePublicIds && product.imagePublicIds.length > 0) {
+        await this.deleteImagesByPublicIds(product.imagePublicIds);
+        return;
+      }
+
+      // Method 2: Extract public IDs from image URLs
+      if (product.images && product.images.length > 0) {
+        const cloudinaryUrls = product.images.filter((url) =>
+          isCloudinaryUrl(url)
+        );
+
+        if (cloudinaryUrls.length > 0) {
+          await this.deleteImagesByUrls(cloudinaryUrls);
+        }
+      }
+    } catch (error) {
+      // Log the error but don't fail the product deletion
+      console.error("Error deleting product images from Cloudinary:", error);
+      // You might want to send this to an error tracking service
+    }
+  }
+  /**
+   * Deletes images using public IDs
+   */
+  private async deleteImagesByPublicIds(publicIds: string[]): Promise<void> {
+    const deletePromises = publicIds
+      .filter((publicId) => publicId && publicId.trim() !== "")
+      .map(async (publicId) => {
+        try {
+          await deleteImage(publicId);
+          console.log(`Successfully deleted image with publicId: ${publicId}`);
+        } catch (error) {
+          console.error(
+            `Failed to delete image with publicId: ${publicId}`,
+            error
+          );
+          // Continue with other deletions even if one fails
+        }
+      });
+
+    await Promise.all(deletePromises);
+  }
+
+  /**
+   * Deletes images by extracting public IDs from URLs
+   */
+  private async deleteImagesByUrls(imageUrls: string[]): Promise<void> {
+    const deletePromises = imageUrls.map(async (url) => {
+      try {
+        const publicId = extractPublicId(url);
+        if (publicId) {
+          await deleteImage(publicId);
+          console.log(`Successfully deleted image: ${url}`);
+        } else {
+          console.warn(`Could not extract public ID from URL: ${url}`);
+        }
+      } catch (error) {
+        console.error(`Failed to delete image: ${url}`, error);
+        // Continue with other deletions even if one fails
+      }
+    });
+
+    await Promise.all(deletePromises);
   }
 }
 

@@ -4,7 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VendorService = void 0;
-const cloudinary_1 = __importDefault(require("../../config/cloudinary"));
+const cloudinary_1 = require("../../utils/cloudinary");
+const cloudinary_2 = __importDefault(require("../../config/cloudinary"));
 const data_source_1 = require("../../config/data-source");
 const entities_1 = require("../../entities");
 class VendorService {
@@ -153,11 +154,11 @@ class VendorService {
             if (oldProfileImage &&
                 profileImage &&
                 oldProfileImage !== profileImage &&
-                this.isCloudinaryUrl(oldProfileImage)) {
+                (0, cloudinary_1.isCloudinaryUrl)(oldProfileImage)) {
                 try {
-                    const oldPublicId = VendorService.extractPublicId(oldProfileImage);
+                    const oldPublicId = (0, cloudinary_1.extractPublicId)(oldProfileImage);
                     if (oldPublicId) {
-                        await cloudinary_1.default.uploader.destroy(oldPublicId, {
+                        await cloudinary_2.default.uploader.destroy(oldPublicId, {
                             invalidate: true,
                         });
                         console.log(`Deleted old image: ${oldPublicId}`);
@@ -198,40 +199,6 @@ class VendorService {
             (longitude === undefined && latitude !== undefined)) {
             throw new Error("Both longitude and latitude must be provided together");
         }
-    }
-    static extractPublicId(url) {
-        if (!url || typeof url !== "string") {
-            return null;
-        }
-        try {
-            const parsedUrl = new URL(url);
-            const pathParts = parsedUrl.pathname.split("/");
-            const uploadIndex = pathParts.indexOf("upload");
-            if (uploadIndex === -1 || uploadIndex >= pathParts.length - 1) {
-                return null;
-            }
-            const publicIdWithVersion = pathParts.slice(uploadIndex + 1).join("/");
-            const lastDotIndex = publicIdWithVersion.lastIndexOf(".");
-            const publicId = lastDotIndex !== -1
-                ? publicIdWithVersion.substring(0, lastDotIndex)
-                : publicIdWithVersion;
-            if (publicId.startsWith("v")) {
-                const slashIndex = publicId.indexOf("/");
-                if (slashIndex !== -1) {
-                    return publicId.substring(slashIndex + 1);
-                }
-            }
-            return publicId;
-        }
-        catch (error) {
-            console.error("Error extracting public ID:", error);
-            return null;
-        }
-    }
-    isCloudinaryUrl(url) {
-        if (!url)
-            return false;
-        return url.includes("res.cloudinary.com") && url.includes("/image/upload/");
     }
 }
 exports.VendorService = VendorService;

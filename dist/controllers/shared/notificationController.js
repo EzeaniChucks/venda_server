@@ -86,8 +86,8 @@ class NotificationController {
                 return (0, response_1.validationErrorResponse)(res, errors.array());
             }
             const user = req.user;
-            const { fcmToken } = req.body;
-            await notification_service_1.NotificationService.registerFCMToken(user.id, user.role, fcmToken);
+            const { fcmToken, deviceOs } = req.body;
+            await notification_service_1.NotificationService.registerFCMToken(user.id, user.role, fcmToken, deviceOs);
             return (0, response_1.successResponse)(res, {}, "Push token registered successfully");
         }
         catch (error) {

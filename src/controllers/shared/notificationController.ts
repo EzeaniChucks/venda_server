@@ -127,9 +127,14 @@ export class NotificationController {
       }
 
       const user = (req as any).user;
-      const { fcmToken } = req.body;
+      const { fcmToken, deviceOs } = req.body;
 
-      await NotificationService.registerFCMToken(user.id, user.role, fcmToken);
+      await NotificationService.registerFCMToken(
+        user.id,
+        user.role,
+        fcmToken,
+        deviceOs
+      );
 
       return successResponse(res, {}, "Push token registered successfully");
     } catch (error) {
